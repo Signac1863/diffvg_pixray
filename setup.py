@@ -14,6 +14,10 @@ from setuptools.command.install import install
 from distutils.sysconfig import get_config_var
 from distutils.version import LooseVersion
 
+
+path_cmake = (os.path.abspath(os.path.dirname(__file__)).replace('\\', '/')
+              .replace('/diffvg_pixray', "/venv/Lib/site-packages/cmake/data/bin/cmake"))
+
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir, build_with_cuda):
         Extension.__init__(self, name, sources=[])
@@ -23,9 +27,10 @@ class CMakeExtension(Extension):
 class Build(build_ext):
     def run(self):
         try:
-            out = subprocess.check_output(['cmake', '--version'])
+            # out = subprocess.check_output(['cmake', '--version'])
+            out = subprocess.check_output([path_cmake, '--version'])
         except OSError:
-            raise RuntimeError("CMake must be installed to build the following extensions: " +
+            raise RuntimeError("CMake must either be installed or a full path to it is required to build the following extensions: " +
                                ", ".join(e.name for e in self.extensions))
 
         super().run()
@@ -62,8 +67,8 @@ class Build(build_ext):
                                                                   self.distribution.get_version())
             if not os.path.exists(self.build_temp):
                 os.makedirs(self.build_temp)
-            subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
-            subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
+            subprocess.check_call([path_cmake, ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
+            subprocess.check_call([path_cmake, '--build', '.'] + build_args, cwd=self.build_temp)
         else:
             super().build_extension(ext)
 
