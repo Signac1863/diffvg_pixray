@@ -1,23 +1,22 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 4.0.0)
 
-project(diffvg VERSION 0.0.1 DESCRIPTION "Differentiable Vector Graphics")
+project(diffvg VERSION 0.0.1 DESCRIPTION "Differentiable Vector Graphics" LANGUAGES CXX CUDA)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(WIN32)
-    find_package(Python 3.6 COMPONENTS Development REQUIRED)
-else()
-    find_package(Python 3.7 COMPONENTS Development REQUIRED)
-endif()
+
+find_package (Python 3.11 COMPONENTS Interpreter Development REQUIRED)
+
 add_subdirectory(pybind11)
 
 option(DIFFVG_CUDA "Build diffvg with GPU code path?" ON)
 
 if(DIFFVG_CUDA)
     message(STATUS "Build with CUDA support")
-    find_package(CUDA 10 REQUIRED)
-    set(CMAKE_CUDA_STANDARD 11)
+    #find_package(CUDA 10 REQUIRED)
+    find_package(CUDAToolkit REQUIRED)
+    set(CMAKE_CUDA_STANDARD 12.6)
     if(NOT WIN32)
         # Hack: for some reason the line above doesn't work on some Linux systems.
         set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
@@ -30,7 +29,7 @@ endif()
 
 # include_directories(${CMAKE_SOURCE_DIR}/pybind11/include)
 include_directories(${PYTHON_INCLUDE_PATH})
-find_package(PythonLibs REQUIRED)
+#find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_PATH})
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(pybind11/include)
@@ -78,13 +77,16 @@ set(SRCS atomic.h
          shape.cpp)
 
 if(DIFFVG_CUDA)
+    set(COMPILE_WITH_CUDA 1)
+    message("testing COMPILE_WITH_CUDA? = ${COMPILE_WITH_CUDA}")
     add_compile_definitions(COMPILE_WITH_CUDA)
+
     set_source_files_properties(
         diffvg.cpp
         scene.cpp
-        PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+        PROPERTIES LANGUAGES CUDA)
 
-    cuda_add_library(diffvg MODULE ${SRCS})
+    add_library(diffvg MODULE ${SRCS})
 else()
     add_library(diffvg MODULE ${SRCS})
 endif()
